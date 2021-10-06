@@ -1,0 +1,39 @@
+Requirements
+Climb at same profile to keep at same traffic pattern
+Changes are made to make it better energy
+
+WEIGHT ESTIMATE
+As we cycle the aircraft, we can predict the detailed build-up from the other systems within about 1%. this gives us confidence that these tools are good enough. Allows us to do design studies without putting these subsystems as long lead items.
+Further details will be discussed by subsystem teams
+
+V00
+As a result of low L/D we had a very high cruise power requirement at top of climb.
+
+V01
+We believe the fuselage weight is understimated. 
+Investigating propulsor integration to investigate the BLI benefits.
+
+V02
+Peak motor power up due to improving efficiency estimations.
+
+3-View
+We fit the entire 737 fuselage - passengers, cargo, furnishings, everything, in that space
+
+AERO
+The approximate L/D and CL ranges during cruise
+
+Load and Balance
+Just considering the CG, we would move the wing 8 feet back. We still need to evaluate layout, S&C, routing, etc.
+Effects of the 5 tanks. The passenger load has been simplified to 4 steps.
+
+TOFL consideration
+DEP affect aircraft configuration and sizing
+
+Next Steps
+Sizing conditions - discussed in later presentation, but we want to learn the impact of all of these on the overall a/c system
+Lower altitudes - ride comfort and speed sacrifice
+
+
+Questions
+Punt question about LH2 in wings, "as we discussed as a team, the cylindrical tanks are more efficinet in terms of weight and volume and will be discussed further by that subteam.
+
