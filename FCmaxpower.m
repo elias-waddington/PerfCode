@@ -9,6 +9,7 @@ function maxpower = FCmaxpower(weight,h,M)
 %     load_R2_SOFCx2;
 %     load_R2_SOFCx3;
     load_R2_1214_cor; 
+%     load_R2_1214_HD;
     if h>37500
         h = 37000;
     end
