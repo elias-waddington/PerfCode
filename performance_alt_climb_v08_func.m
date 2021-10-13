@@ -52,8 +52,7 @@ for outer_loop = 1:length(AR_sweep)*length(S_sweep) %*length(input_sweep)
 % no_of_iterations = 0;
 clear ac
 clear weight
-% run('aircraftfile_V02.m')
-[ac] = aircraftfile_V03_func;
+[ac] = aircraftfile_V04_func;
 ac.FCsize = MP_Wlb_mat(1,1); %maximum power output at SL, M = 0.25
 
 %This section for setting up sweeps
@@ -198,7 +197,7 @@ fprintf('Batt = %3.1d \n \n',weight.battery)
 
 state.W0 = weight.WE+ac.WF+weight.Wpay;
 %% Step 1 - Taxi & TO
-[Taxi_Power,Taxi_Thrust] = taxi_estimator(weight,Msweep,REsweep,CLsweep,CDout,MP_h_rng,MP_M_rng,MP_Drag_mat,MP_Wlb_mat,state,ac,CLto);
+[Taxi_Power,Taxi_Thrust] = taxi_estimator(weight,Msweep,REsweep,CLsweep,CDout,FCmap_drag,MP_M_rng,MP_Drag_mat,MP_Wlb_mat,state,ac,CLto);
 Taxi_Power = Taxi_Power + HotelLoads(0.05,1,1);
 FCeff = interp3D_V003(FCmap_eff,1,Taxi_Power/weight.fuelcell,0.26,1,'n');
 FB_taxi = H2CT(Taxi_Thrust,Taxi_Power,FCeff)*Taxi_Thrust*60*35;
@@ -294,248 +293,31 @@ if takeoff_type == 2
    dataout.TR_V35 = 0;
 %    ac.size.sizing_power = ac.size.sizing_power*1.2; %20% too big
    
-elseif takeoff_type == 3
-    TOFL_error = 1;
-    no_of_iterations_to = 1;
-    
-    if no_of_iterations_to > 25
-        is_borked = 1;
-        break
-    end
-    no_of_iterations_to = no_of_iterations_to+1;
-
-    dataout.HotelP = HotelLoads(0.25,0,1);
-    h = 37000;
-    mission.altitude = h;
-    mission.a = speedofsound(h);
-    mission.viscocity = airviscocity(h);
-    mission.M = LRC_Mach;
-    mission.v_cruise = mission.M*mission.a; %ft/sec
-    P = airpressure(h);
-    mission.rho = airdensity(h);
-    rho = airdensity(h);
-    qbar = 0.5*mission.v_cruise^2*mission.rho;
-    CL = (state.W0)/qbar/ac.wing.S;
-    Re = mission.rho*mission.v_cruise*ac.wing.MAC/mission.viscocity;
-    CD = interp3(Msweep,REsweep,CLsweep,CDout,mission.M,Re,CL,'spline');
-    % Hex Drag calculate here
-%     HexDrag = interp2(MP_h_rng,MP_M_rng,MP_Drag_mat,0,0.25)*weight.fuelcell;
-    HexDragCruise = interp2(MP_h_rng,MP_M_rng,MP_Drag_mat,h,mission.M)*weight.fuelcell;
-    dataout.Tcruise_test = (100/60)*state.W0/mission.v_cruise + CD*qbar*ac.wing.S + HexDragCruise;
-    dataout.TR_cruise = dataout.Tcruise_test;
-    dataout.TA_cruise = dataout.Tcruise_test;
-    dataout.P_C = dataout.Tcruise_test*mission.v_cruise*1.3558/FC2fan(h)+ HotelLoads(mission.M,h,1);
-    FC_C_size =  dataout.P_C/interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,h,LRC_Mach);
-    [TOFL,dataout.TA_TO,dataout.TR_TO] = takeoff_solver(weight,Msweep,REsweep,CLsweep,CDout,MP_h_rng,MP_M_rng,MP_Drag_mat,MP_Wlb_mat,state,ac,CLto);
-%     dataout.TA_TO = dataout.TR_TO;
-    ac.size.sizing_power = dataout.P_C*interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,0,.25)/interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,37000,.773); %Adjust to sea level power output
-    ac.size.max_power = ac.size.sizing_power*FC2fan(0)/(FanEff(0) * 0.95); %adjust sizing power to motor output
-    dataout.sizedby = 36;
-%     dataout.TA_TO = ac.size.sizing_power
-    
-    
-    if TOFL > max_TOFL
-        iii = 1;
-        dataout.sizedby = 0;
-        while abs(TOFL_error) > 0.005
-            [TOFL,dataout.TA_TO,dataout.TR_TO] = takeoff_solver(weight,Msweep,REsweep,CLsweep,CDout,MP_h_rng,MP_M_rng,MP_Drag_mat,MP_Wlb_mat,state,ac,CLto);
-            TOFL_error = ((TOFL-8200)/8200);
-            delta1 = .35;
-            weight.fuelcell = weight.fuelcell + weight.fuelcell*TOFL_error*delta1;
-            state.W0 = state.W0 + weight.fuelcell*TOFL_error*delta1;
-            iii = iii + 1;
-            if iii > 50
-                break
-            end
-        
-        end
-    end
-   dataout.TA_V35 = state.W0/ac.wing.S/(1*CLto*dataout.TA_TO/state.W0);
-   dataout.TR_V35 = 0;
-%    dataout.TR_TO = 0;
-%    dataout.TA_TO = 0;
-
-elseif takeoff_type == 4
-    % PEM peak thrust at altitude case
-    TOFL_error = 1;
-    no_of_iterations_to = 1;
-    
-    if no_of_iterations_to > 25
-        is_borked = 1;
-        break
-    end
-    no_of_iterations_to = no_of_iterations_to+1;
-
-    dataout.HotelP = HotelLoads(0.25,0,1);
-    h = 37000;
-    mission.altitude = h;
-    mission.a = speedofsound(h);
-    mission.viscocity = airviscocity(h);
-    mission.M = LRC_Mach;
-    mission.v_cruise = mission.M*mission.a; %ft/sec
-    P = airpressure(h);
-    mission.rho = airdensity(h);
-    rho = airdensity(h);
-    qbar = 0.5*mission.v_cruise^2*mission.rho;
-    CL = (state.W0)/qbar/ac.wing.S;
-    Re = mission.rho*mission.v_cruise*ac.wing.MAC/mission.viscocity;
-    CD = interp3(Msweep,REsweep,CLsweep,CDout,mission.M,Re,CL,'spline');
-    % Hex Drag calculate here
-%     HexDrag = interp2(MP_h_rng,MP_M_rng,MP_Drag_mat,0,0.25)*weight.fuelcell;
-    HexDragCruise = interp3D_V003(FCmap_drag,1,494.9,mission.M,mission.altitude,'n')*weight.fuelcell;
-    if HexDragCruise < 0
-        HexDragCruise = 0;
-    end
-    dataout.Tcruise_test = (100/60)*state.W0/mission.v_cruise + CD*qbar*ac.wing.S + HexDragCruise;
-    dataout.TR_cruise = dataout.Tcruise_test;
-    dataout.TA_cruise = dataout.Tcruise_test;
-    dataout.P_C = dataout.Tcruise_test*mission.v_cruise*1.3558/FC2fan(h)+ HotelLoads(mission.M,h,1);
-    FC_C_size =  dataout.P_C/494.9; %assumes max power point, need to update here to change edge case
-%     [TOFL,dataout.TA_TO,dataout.TR_TO] = takeoff_solver(weight,Msweep,REsweep,CLsweep,CDout,MP_h_rng,MP_M_rng,MP_Drag_mat,MP_Wlb_mat,state,ac,CLto);
-%     dataout.TA_TO = dataout.TR_TO;
-    ac.size.sizing_power = dataout.P_C*interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,0,.25)/interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,37000,.773); %Adjust to sea level power output
-    ac.size.max_power = ac.size.sizing_power*FC2fan(0)/(FanEff(0) * 0.95); %adjust sizing power to motor output
-    dataout.sizedby = 36;
-    [dataout.TA_TO,FPR] = thrust2powerv02(0,FC_C_size*interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,0,.25)*FC2fan(0)/FanEff(0),ac);
-    Takeoff_Parameter = (state.W0/ac.wing.S)/(press_ratio*CLto*dataout.TA_TO/state.W0);
-    TOFL = interp1(TakeoffParam,RunwayLength,Takeoff_Parameter);
-    if isnan(TOFL) == 1;
-        disp('TOFL error')
-    end
-%     datzxc raout.TA_TO = ac.size.sizing_power
-    dataout.TR_TO = 0;
-
-    if TOFL > max_TOFL
-        dataout.sizedby = 0;
-        TOFL = 8200;
-        ToP_required = interp1(RunwayLength,TakeoffParam,max_TOFL);
-        dataout.TA_TO = (state.W0/ac.wing.S)/(1*CLto*ToP_required)*state.W0;
-        t_error = 1;
-        P_shaft_guess = ac.size.sizing_power;
-        while t_error > 0.005
-            [Fnet,dataout.TR_TO] = thrust2powerv02(0,P_shaft_guess,ac);
-            t_error = (-Fnet+dataout.TA_TO)/dataout.TA_TO;
-            P_shaft_guess = P_shaft_guess + P_shaft_guess*t_error*.6;
-        end
-        FC_TO_size = P_shaft_guess/(FC2fan(0)/FanEff(0))/interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,0,.25);
-        ac.size.sizing_power = FC_TO_size*interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,0,.25);
-        ac.size.max_power = ac.size.sizing_power*FC2fan(0)/(FanEff(0) * 0.95); %adjust sizing power to motor output
-       
-        if FC_TO_size < FC_C_size
-            ac.size.sizing_power = FC_C_size*interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,0,.25);
-            ac.size.max_power = ac.size.sizing_power*FC2fan(0)/(FanEff(0) * 0.95);
-            dataout.sizedby = 36;
-            disp('WTF Actually sized by cruise')
-        end
-        
-    end
-   dataout.TA_V35 = state.W0/ac.wing.S/(1*CLto*dataout.TA_TO/state.W0);
-   dataout.TR_V35 = 0;
-   
-   
-   
-   
-   elseif takeoff_type == 5
-       % SOFC cruise-scaled case
-     TOFL_error = 1;
-    no_of_iterations_to = 1;
-    
-    if no_of_iterations_to > 25
-        is_borked = 1;
-        break
-    end
-    no_of_iterations_to = no_of_iterations_to+1;
-
-    dataout.HotelP = HotelLoads(0.25,0,1);
-    h = 37000;
-    mission.altitude = h;
-    mission.a = speedofsound(h);
-    mission.viscocity = airviscocity(h);
-    mission.M = LRC_Mach;
-    mission.v_cruise = mission.M*mission.a; %ft/sec
-    P = airpressure(h);
-    mission.rho = airdensity(h);
-    rho = airdensity(h);
-    qbar = 0.5*mission.v_cruise^2*mission.rho;
-    CL = (state.W0)/qbar/ac.wing.S;
-    Re = mission.rho*mission.v_cruise*ac.wing.MAC/mission.viscocity;
-    CD = interp3(Msweep,REsweep,CLsweep,CDout,mission.M,Re,CL,'spline');
-    % Hex Drag calculate here
-%     HexDrag = interp2(MP_h_rng,MP_M_rng,MP_Drag_mat,0,0.25)*weight.fuelcell;
-    Thrust_Required = CD*qbar*ac.wing.S; 
-    Power_Required = calcPower(Thrust_Required,mission.v_cruise,h) + HotelLoads(0.773,37000,3);
-    HexDragCruise = interp3D_V003(FCmap_drag,1,Power_Required/weight.fuelcell,mission.M,h,'n')*weight.fuelcell;
-    dataout.Tcruise_test = Thrust_Required + HexDragCruise;
-    dataout.TR_cruise = dataout.Tcruise_test;
-    dataout.TA_cruise = dataout.Tcruise_test;
-    dataout.P_C = (dataout.Tcruise_test*mission.v_cruise*1.3558/FC2fan(h)+ HotelLoads(mission.M,h,1))/0.8;
-    FC_C_size =  dataout.P_C/interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,h,LRC_Mach); %assumes max power point, need to update here to change edge case
-%     [TOFL,dataout.TA_TO,dataout.TR_TO] = takeoff_solver(weight,Msweep,REsweep,CLsweep,CDout,MP_h_rng,MP_M_rng,MP_Drag_mat,MP_Wlb_mat,state,ac,CLto);
-%     dataout.TA_TO = dataout.TR_TO;
-    ac.size.sizing_power = dataout.P_C*interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,0,.25)/interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,37000,.773); %Adjust to sea level power output
-    ac.size.max_power = ac.size.sizing_power*FC2fan(0)/(FanEff(0) * 0.95); %adjust sizing power to motor output
-    dataout.sizedby = 36;
-    [dataout.TA_TO,FPR] = thrust2powerv02(0,FC_C_size*interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,0,.25)*FC2fan(0)/FanEff(0),ac);
-    Takeoff_Parameter = (state.W0/ac.wing.S)/(press_ratio*CLto*dataout.TA_TO/state.W0);
-    TOFL = interp1(TakeoffParam,RunwayLength,Takeoff_Parameter);
-    if isnan(TOFL) == 1
-        disp('TOFL error')
-    end
-%     datzxc raout.TA_TO = ac.size.sizing_power
-    dataout.TR_TO = 0;
-
-    if TOFL > max_TOFL
-        dataout.sizedby = 0;
-        TOFL = 8200;
-        ToP_required = interp1(RunwayLength,TakeoffParam,max_TOFL);
-        dataout.TA_TO = (state.W0/ac.wing.S)/(1*CLto*ToP_required)*state.W0;
-        t_error = 1;
-        P_shaft_guess = ac.size.sizing_power;
-        while t_error > 0.005
-            [Fnet,dataout.TR_TO] = thrust2powerv02(0,P_shaft_guess,ac);
-            t_error = (-Fnet+dataout.TA_TO)/dataout.TA_TO;
-            P_shaft_guess = P_shaft_guess + P_shaft_guess*t_error*.6;
-        end
-        FC_TO_size = P_shaft_guess/(FC2fan(0)/FanEff(0))/interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,0,.25);
-        ac.size.sizing_power = FC_TO_size*interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,0,.25);
-        ac.size.max_power = ac.size.sizing_power*FC2fan(0)/(FanEff(0) * 0.95); %adjust sizing power to motor output
-       
-        if FC_TO_size < FC_C_size
-            ac.size.sizing_power = FC_C_size*interp2(MP_h_rng,MP_M_rng,MP_Wlb_mat,0,.25);
-            ac.size.max_power = ac.size.sizing_power*FC2fan(0)/(FanEff(0) * 0.95);
-            dataout.sizedby = 36;
-            disp('WTF Actually sized by cruise')
-        end
-        
-    end
-   dataout.TA_V35 = state.W0/ac.wing.S/(1*CLto*dataout.TA_TO/state.W0);
-   dataout.TR_V35 = 0;
-
 end
 
 weight.final.ac = state.W1;
 weight.final.fuel = state.WF1;
 
 %% Step 2 - Climb
-[state,dat,counter] = Climb_v01(ac,state,weight,0.25,LRC_Mach,0,cruise_alt,counter,set,dat,Msweep,REsweep,CLsweep,CDout,MP_h_rng,MP_M_rng,MP_Drag_mat,MP_Eff_mat,dt);
+[state,dat,counter,weight] = Climb_v01(ac,state,weight,0.25,LRC_Mach,0,cruise_alt,counter,set,dat,Msweep,REsweep,CLsweep,CDout,MP_h_rng,MP_M_rng,MP_Drag_mat,MP_Eff_mat,dt);
 
 %% Step 3 - Cruise
-[state,dat,counter] = Cruise_v01(ac,state,weight,LRC_Mach,cruise_alt,counter,set,dat,FCmap_drag,FCmap_eff,Msweep,REsweep,CLsweep,CDout,dt,LRC_range);
+[state,dat,counter,weight] = Cruise_v01(ac,state,weight,LRC_Mach,cruise_alt,counter,set,dat,FCmap_drag,FCmap_eff,Msweep,REsweep,CLsweep,CDout,dt,LRC_range);
 
 %% Step 4 - Descent
-[state,dat,counter]  = Descent_v01(ac,state,weight,LRC_Mach,cruise_alt,0,counter,set,dat,FCmap_eff,Msweep,REsweep,CLsweep,CDout,dt);
+[state,dat,counter,weight]  = Descent_v01(ac,state,weight,LRC_Mach,cruise_alt,0,counter,set,dat,FCmap_eff,Msweep,REsweep,CLsweep,CDout,dt,MP_h_rng,MP_M_rng,LP_Drag_mat,LP_Eff_mat);
 
 %% Step 5 - Abort Climb Out
-[state,dat,counter] = Climb_v01(ac,state,weight,0.25,alt_Mach,0,alt_altitude,counter,set,dat,Msweep,REsweep,CLsweep,CDout,MP_h_rng,MP_M_rng,MP_Drag_mat,MP_Eff_mat,dt);
+[state,dat,counter,weight] = Climb_v01(ac,state,weight,0.25,alt_Mach,0,alt_altitude,counter,set,dat,Msweep,REsweep,CLsweep,CDout,MP_h_rng,MP_M_rng,MP_Drag_mat,MP_Eff_mat,dt);
 
 %% Step 6 - Cruise to Alternate
-[state,dat,counter] = Cruise_v01(ac,state,weight,alt_Mach,cruise_alt,counter,set,dat,FCmap_drag,FCmap_eff,Msweep,REsweep,CLsweep,CDout,dt,200);
+[state,dat,counter,weight] = Cruise_v01(ac,state,weight,alt_Mach,cruise_alt,counter,set,dat,FCmap_drag,FCmap_eff,Msweep,REsweep,CLsweep,CDout,dt,200);
 
 %% Step 7 - 30 minute loiter
-[state,dat,counter]  = Loiter_v01(ac,state,weight,alt_Mach,alt_altitude,counter,set,dat,Msweep,REsweep,CLsweep,CDout,FCmap_drag,FCmap_eff, 0.5,dt);
+[state,dat,counter,weight]  = Loiter_v01(ac,state,weight,alt_Mach,alt_altitude,counter,set,dat,Msweep,REsweep,CLsweep,CDout,FCmap_drag,FCmap_eff, 0.5,dt);
 
 %% Step 8 - Descent and Landing
-[state,dat,counter]  = Descent_v01(ac,state,weight,alt_Mach,alt_altitude,0,counter,set,dat,FCmap_eff,Msweep,REsweep,CLsweep,CDout,dt);
+[state,dat,counter,weight]  = Descent_v01(ac,state,weight,alt_Mach,alt_altitude,0,counter,set,dat,FCmap_eff,Msweep,REsweep,CLsweep,CDout,dt,MP_h_rng,MP_M_rng,LP_Drag_mat,LP_Eff_mat);
 
 %% Step 9 - Taxi to Gate (final calculations)
 

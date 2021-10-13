@@ -1,4 +1,4 @@
-function [state,dat,counter] = Climb_v01(ac,state,weight,Min,Mfin,Altin,Altfin,counter,set,dat,Msweep,REsweep,CLsweep,CDout,MP_h_rng,MP_M_rng,MP_Drag_mat,MP_Eff_mat,dt)
+function [state,dat,counter,weight] = Climb_v01(ac,state,weight,Min,Mfin,Altin,Altfin,counter,set,dat,Msweep,REsweep,CLsweep,CDout,MP_h_rng,MP_M_rng,MP_Drag_mat,MP_Eff_mat,dt)
 
 Fuelburn = 0;
 h = Altin;
@@ -146,14 +146,14 @@ while h < Altfin %change mission.M to linearly scale from 0.4 to cruise as incre
     dat.t(counter) = time;
     dat.W(counter) = state.W1 - Fuelburn;
     dat.PP(counter) = Tr*mission.v_cruise*1.3558;
-    dat.MP(counter) = calcMotorPower(Tr,mission.v_cruise,h);
-    dat.P(counter) = calcPower(Tr,mission.v_cruise,h)+HotelP;
+    dat.MP(counter) = Pshaft;
+    dat.P(counter) = FCmaxpower(weight,h,mission.M);
     dat.hdot(counter) = hdot*dt;
     dat.Re(counter) = Re;
     dat.Pa(counter) = FCmaxpower(weight,h,mission.M);
-    dat.Ta(counter) = FCmaxpower(weight,h,mission.M)*FC2fan(h)/1.3558/mission.v_cruise;
+    dat.Ta(counter) = Tr;
     dat.Tr(counter) = D;
-    dat.Pr(counter) = D/FC2fan(h)*1.3558*mission.v_cruise;
+    dat.Pr(counter) = interp1(Tout,Pout,D)/FC2shaft + HotelP;
     dat.HD(counter) = HexDrag;
     dat.TSFC(counter) = H2CT(Tr,FCmaxpower(weight,h,mission.M),FCeff);
     if set.battery_use == 1

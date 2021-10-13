@@ -1,4 +1,4 @@
-function [state,dat,counter]  = Loiter_v01(ac,state,weight,M,cruise_alt,counter,set,dat,Msweep,REsweep,CLsweep,CDout,FCmap_drag,FCmap_eff, E_alt,dt)
+function [state,dat,counter,weight]  = Loiter_v01(ac,state,weight,M,cruise_alt,counter,set,dat,Msweep,REsweep,CLsweep,CDout,FCmap_drag,FCmap_eff, E_alt,dt)
 % E_alt = 0.5; %hrs
 mission.M = M;
 % state.W7_old = state.W6/(exp(E_alt*3600*CT/(CL/CD)));

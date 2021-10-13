@@ -59,8 +59,8 @@ battery_use = 1;
 % input_sweep = linspace(2,2.6,3);
 % input_sweep = 3;
 % 
-AR_sweep = linspace(6,12,13);
-S_sweep = linspace(1500,2500,11);
+% AR_sweep = linspace(6,12,13);
+% S_sweep = linspace(1500,2500,11);
 % % input_sweep = linspace(1.8,3,13);
 % % input_sweep = linspace(2.8,3,2);
 % input_sweep = linspace(1,2,11);
@@ -75,8 +75,8 @@ S_sweep = linspace(1500,2500,11);
 % S_sweep = 1600;
 % input_sweep = ;
 
-% AR_sweep = 10;
-% S_sweep = 1840;
+AR_sweep = 10;
+S_sweep = 1840;
 % % input_sweep = linspace(1,1.5,11);
 input_sweep = 1.;
 

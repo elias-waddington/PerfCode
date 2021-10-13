@@ -1,4 +1,4 @@
-function [state,dat,counter] = Cruise_v01(ac,state,weight,LRC_Mach,cruise_alt,counter,set,dat,FCmap_drag,FCmap_eff,Msweep,REsweep,CLsweep,CDout,dt,LRC_range)
+function [state,dat,counter,weight] = Cruise_v01(ac,state,weight,LRC_Mach,cruise_alt,counter,set,dat,FCmap_drag,FCmap_eff,Msweep,REsweep,CLsweep,CDout,dt,LRC_range)
 mission.altitude = cruise_alt; %ft
 mission.M = LRC_Mach;
 mission.a = speedofsound(mission.altitude); %fps
@@ -65,19 +65,19 @@ while Distance_Flown < Target_Distance
     Distance_Flown = Distance_Flown + mission.v_cruise * dt ;
     dat.W(counter) = state.W2-Fuelburn;
     dat.PP(counter) = Tr*mission.v_cruise* 1.3558;
-    dat.MP(counter) = calcMotorPower(Tr,mission.v_cruise,cruise_alt);
+    dat.MP(counter) = Pshaft;
     dat.P(counter) = P_needed; %calcPower(Tr,mission.v_cruise,h) + HotelP;
     dat.HD(counter) = HexDrag;
     dat.M(counter) = mission.M;
     dat.Re(counter) = Re;
     dat.TSFC(counter) = H2CT(Tr,P_needed,FCeff);
     dat.Pa(counter) = FCmaxpower(weight,mission.altitude,mission.M);
-    dat.Ta(counter) = FCmaxpower(weight,mission.altitude,mission.M)*FC2fan(h)/1.3558/mission.v_cruise;
+    dat.Ta(counter) = interp1(Pcr,Tcr,(FCmaxpower(weight,h,mission.M)-HotelP)*FC2shaft);
     dat.Tr(counter) = Tr;
     dat.Pr(counter) = P_needed; %Tr/FC2fan(h)*1.3558*mission.v_cruise;
     
     if ~size_power_cbrk
-        check_power = calcPower(Tr,mission.v_cruise,h);
+        check_power = P_needed;
         if check_power > ac.size.sizing_power
             ac.size.sizing_power = check_power;
         end

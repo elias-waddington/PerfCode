@@ -1,4 +1,4 @@
-function [state,dat,counter,weight]  = Descent_v01(ac,state,weight,Min,Altin,Altfin,counter,set,dat,FCmap_eff,Msweep,REsweep,CLsweep,CDout,dt,MP_h_rng,MP_M_rng,LP_Drag_mat,LP_Eff_mat)
+function [state,dat,counter,weight]  = Descent_v01(ac,state,weight,Min,Altin,Altfin,counter,set,dat,FCmap_eff,Msweep,REsweep,CLsweep,CDout,dt)
 Fuelburn = 0;
 h = Altin;
 mission.M = Min;
@@ -61,7 +61,7 @@ while h > 1
 %     Tr = D - hdot*(state.W3-Fuelburn)/mission.v_cruise;
     hdot = -mission.v_cruise*(Tr-D)/(state.W3-Fuelburn);
     FCeff = interp2(MP_h_rng,MP_M_rng,LP_Eff_mat,h,mission.M);
-    Fuelburn = Fuelburn + H2CT(Tr,FCminpower(weight,h,mission.M),FCeff)*dt*Tr;
+    Fuelburn = Fuelburn + H2CT(Tr,dFCminpower(weight,h,mission.M),FCeff)*dt*Tr;
     h = h - hdot*dt;
     if h < 0
         h = 0;
@@ -80,7 +80,6 @@ while h > 1
         dat.CDofuse(counter) = interp3(Msweep,REsweep,CLsweep,CDofuse,mission.M,Re,CL,'spline');
         dat.Cf(counter) = interp3(Msweep,REsweep,CLsweep,Cffout,mission.M,Re,CL,'spline');
     end
-    [Tout,Pout] = power2thrust_v01(mission.M,ac,h);
 %     CDowinggraph(counter) = CDowing;
     dat.h(counter) = mission.altitude;
     dat.T(counter) = Tr;
@@ -89,15 +88,15 @@ while h > 1
     dat.W(counter) = state.W3-Fuelburn;
     dat.M(counter) = mission.M;
     dat.P(counter) = Tr*mission.v_cruise* 1.3558;
-    dat.M(counter) = interp1(Tout,Pout,Tr);
-    dat.P(counter) = interp1(Tout,Pout,Tr)/FC2shaft + HotelP;
+    dat.M(counter) = calcMotorPower(Tr,mission.v_cruise,h);
+    dat.P(counter) = calcPower(Tr,mission.v_cruise,h) + HotelP;
     dat.HD(counter) = HexDrag;
     dat.hdot(counter) = -hdot*dt;
     dat.Re(counter) = Re;
     dat.Pa(counter) = FCmaxpower(weight,h,mission.M);
-    dat.Ta(counter) = interp1(Pout,Tout,(FCmaxpower(weight,h,mission.M)-HotelP)*FC2shaft);
+    dat.Ta(counter) = FCmaxpower(weight,h,mission.M)*FC2fan(h)/1.3558/mission.v_cruise;
     dat.Tr(counter) = D;
-    dat.Pr(counter) = interp1(Tout,Pout,D)/FC2shaft(mission.altitude);
+    dat.Pr(counter) = D/FC2fan(h)*1.3558*mission.v_cruise;
     dat.TSFC(counter) = H2CT(Tr,dat.P(counter-1),FCeff);
 
     counter = counter + 1;
