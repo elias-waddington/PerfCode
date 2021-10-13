@@ -1,23 +1,35 @@
 % HEX Drag Primer Example
 % Takeoff example
+% 1 HEX per stack
 
 %% INPUTS
 % Constants
 gamma = 1.4;
-cp = 1; %kj/kg-k
+cp = 1.006; %kj/kg-k
 
 %Variables
-dT = 60; % deg C
-Minf = 0.25;
-h = 0;
-Hdot = 880; %KW (Alt. Qdot)
-Ar = 1.01264; %m^2, frontal area of radiator
+% dT = 60; % deg C - why is this assumed?
+% Minf = 0.25;
+% h = 0;
+% Hdot = 880; %KW (Qdot) - check on how to calculate
+% Ar = .986; %m^2, frontal area of radiator
+% Ainlet = 0.10460882; %m^2, inlet area, from Chellappa
+
+dT = 60; % deg C - why is this assumed?
+Minf = 0.773;
+h = 11430;
+Hdot = 870.3; %KW (Qdot) - check on how to calculate
+Ar = .9858; %m^2, frontal area of radiator
 Ainlet = 0.10460882; %m^2, inlet area, from Chellappa
 
+
 %Environemntal (h-dervied)
-[T0, a, P, rhoinf] = atmosisa(h);
+[T0, a, Pinf, rhoinf] = atmosisa(h);
 % T0 = 307; %deg K
 vinf = Minf*a;
+
+Tt0 = T0*(1+(gamma-1)/2*Minf^2);
+dT = 396-Tt0; %423/396
 
 %% Steps
 % Step 1. Determine heat load
@@ -25,13 +37,10 @@ vinf = Minf*a;
 % (now in Variables)
 
 % Step 2. Determine HEX velocity (v1)
-
 Mdot = Hdot/(cp*dT);
-% Mdot = rhoinf*vinf*Ainlet;
-% dT = Mdot/Hdot*cp;
 
 %Need to know Ar, rho 1.
-rho1 = 1.225; % in lieu of better knowledge, use ambient rho
+rho1 = rhoinf*(1+(gamma-1)/2*Minf^2)^(1/(gamma-1)); % assume stagnation density
 v1 = Mdot/Ar/rho1; 
 
 % Step 3. Frictional losses using v1
@@ -41,7 +50,7 @@ dp1p2 = 1/2*rho1*v1^2*P;
 % Step 4. Determine exhaust velocity v3
 
 % v3 = sqrt((1/2*rhoinf*vinf^2-1/2*rho1*v1^2*P)/(1/2*rhoinf))
-v3 = sqrt((vinf^2-P*v1^2)*(T0+dT)/T0)
+v3 = sqrt((vinf^2-P*v1^2)*(396)/Tt0); % T0 or Tt0?
 %Here, do we assume the nozzle is 'ideally expanded'?
 
 % Step 5. Determine HEX core drag
