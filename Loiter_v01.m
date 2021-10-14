@@ -1,4 +1,4 @@
-function [state,dat,counter]  = Loiter_v01(ac,state,weight,M,cruise_alt,counter,set,dat,Msweep,REsweep,CLsweep,CDout,FCmap_drag,FCmap_eff, E_alt,dt)
+function [state,dat,counter,weight]  = Loiter_v01(ac,state,weight,M,cruise_alt,counter,set,dat,Msweep,REsweep,CLsweep,CDout,FCmap_drag,FCmap_eff, E_alt,dt)
 % E_alt = 0.5; %hrs
 mission.M = M;
 % state.W7_old = state.W6/(exp(E_alt*3600*CT/(CL/CD)));
@@ -26,7 +26,7 @@ while loiter_time < E_alt*60*60+1
     CD = interp3(Msweep,REsweep,CLsweep,CDout,mission.M,Re,CL,'spline');
     HexDrag = interp3D_V003(FCmap_drag,1,dat.P(counter-1)/weight.fuelcell,mission.M,mission.altitude,'n')*weight.fuelcell;
     if HexDrag > 90000
-        HexDrag = HDgraph(counter-1)*0.25;
+        HexDrag = dat.HD(counter-1)*0.25;
     end
     Tr = 1/2*mission.rho*mission.v_cruise^2*ac.wing.S*CD + HexDrag;
     Pshaft = interp1(Talt,Palt,Tr);
