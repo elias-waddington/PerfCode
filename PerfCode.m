@@ -3,7 +3,7 @@ clc
 
 run_parallel = 0;
 
-set.verbose = 1; %toggles mass data output
+set.verbose = 0; %toggles mass data output
 set.dave_numbers = 0; %toggles profile, CF drag terms
 set.drag_breakout = 0; %toggles o, i, w drag terms (1 is on, 0 is off)
 
@@ -43,87 +43,72 @@ S_sweep = 1840;
 % input_sweep = linspace(1,2,21);
 input_sweep = 2.2;
 
-% AR_sweep = linspace(7,12,3);
-% S_sweep = linspace(1600,2500,5);
+AR_sweep = linspace(7,12,3);
+S_sweep = linspace(1600,2500,5);
 
 %Initial Count
 file_out = 0;
 
 
-for outer_loop = 1:length(AR_sweep)*length(S_sweep) %*length(input_sweep)
-% for file_out = 1:length(AR_sweep)
-% for file_out = 1:1
-% no_of_iterations = 0;
-clear ac
-clear weight
-[ac] = aircraftfile_V04_func;
-ac.FCsize = MP_Wlb_mat(1,1); %maximum power output at SL, M = 0.25
+S_ct = 1;
+AR_ct = 1;
+input_ct = 1;
 
-%This section for setting up sweeps
-% file_out = file_out+1
-file_out = outer_loop;
+length_of_run = length(S_sweep)*length(AR_sweep)*length(input_sweep);
+RefMat = zeros(length_of_run,3);
+for i = 1:length_of_run
+    RefMat(i,1) = input_sweep(input_ct);
+    RefMat(i,2) = S_sweep(S_ct);
+    RefMat(i,3) = AR_sweep(AR_ct);
 
-AR_count = AR_count + 1;
-if AR_count > length(AR_sweep)
-    AR_count = 1;
-    S_count = S_count+1;
-    if S_count > length(S_sweep)
-        S_count = 1;
-%         input_count = input_count + 1;
+    input_ct = input_ct+1;
+    if input_ct > length(input_sweep)
+        input_ct = 1; 
+        S_ct = S_ct+1;
+        if S_ct > length(S_sweep)
+            S_ct = 1;
+            AR_ct = AR_ct+1;
+            if AR_ct > length(AR_sweep)
+                AR_ct = 1;
+            end
+        end
     end
 end
+
+parfor i = 1:length_of_run
+    file_out = i;
+    fprintf('%d \\ %d \n',i, length_of_run)
+    ac = struct ;
+    weight = struct ;
+    mission = struct ;
+    dataout = struct ;
+    state = struct ;
+    weightout = struct ;
+    is_borked = 0;
+    ac = aircraftfile_V04_func;
+    ac.FCsize = MP_Wlb_mat(1,1); %maximum power output at SL, M = 0.25
+
+  %from inputs
+    CLto = RefMat(i,1);
+    ac.wing.AR = RefMat(i,3);
+    ac.wing.S = RefMat(i,2);
     
-%     for sweepin' AR
-    ac.wing.AR = AR_sweep(AR_count);
-    ac.wing.A = ac.wing.AR;
-    fprintf('AR = %3.1d \n',ac.wing.AR)
-    ac.wing.S = S_sweep(S_count);
-    ac.wing.bref = sqrt(ac.wing.AR*ac.wing.S);
+    Oversize = 1;
+%   CLto = input_sweep(input_count);
 
 
-%these are the parameters that must update before aero analysis wwith the current setup
-ac.wing.Swetw = ac.wing.S*1.5735;
-ac.wing.croot = 2*ac.wing.S/ac.wing.bref/(1+ac.wing.taper_ratio);
-ac.wing.ctip = ac.wing.croot*ac.wing.taper_ratio;
-ac.wing.MAC = (ac.wing.croot+ac.wing.ctip)/2; 
-ac.wing.tr = ac.wing.croot*.154; %15.4 % based off of http://airfoiltools.com/airfoil/details?airfoil=b737a-il
+    %these are the parameters that must update before aero analysis wwith the current setup
+    ac.wing.Swetw = ac.wing.S*1.5735;
+    ac.wing.croot = 2*ac.wing.S/ac.wing.bref/(1+ac.wing.taper_ratio);
+    ac.wing.ctip = ac.wing.croot*ac.wing.taper_ratio;
+    ac.wing.MAC = (ac.wing.croot+ac.wing.ctip)/2; 
+    ac.wing.tr = ac.wing.croot*.154; %15.4 % based off of http://airfoiltools.com/airfoil/details?airfoil=b737a-il
 
-[REsweep,Msweep,CLsweep, CDout, CDoout, CDiout, CDwout, CDowing, CDofuse, Cffout] = CDgen(ac,N_sweep); %CDgen_V2 is the old, inefficient for debugging
-no_of_iterations = 0;
-%fixed AR for debugging
+    [REsweep,Msweep,CLsweep, CDout, CDoout, CDiout, CDwout, CDowing, CDofuse, Cffout] = CDgen(ac,N_sweep); %CDgen_V2 is the old, inefficient for debugging
+    no_of_iterations = 0;
+    %fixed AR for debugging
 
-has_looped = 0;
-input_count = 0;
-
-for inner_loop = 1:length(input_sweep)
-    
-    
-    
-    if has_looped == 1
-        file_out = file_out + 1;
-        no_of_iterations = 0;
-        clear weight
-        deltaFuel = 100;
-        input_count = input_count+1;
-    else
-        has_looped = 1;
-        clear weight
-        deltaFuel = 100;
-        input_count = input_count+1;
-    end
-
-    disp(file_out)
-    disp(AR_sweep(AR_count))
-    disp(S_sweep(S_count))
-    disp(input_sweep(input_count))
-%     ac.FCsize = input_sweep(input_count);
-% press_ratio = input_sweep(input_count);
-% Oversize = input_sweep(input_count);
-Oversize = 1;
-CLto = input_sweep(input_count);
-% CLto = 2.2;
-
-is_borked = 0;
+    is_borked = 0;
 
 %% Below here from performance code
 %% Step 0 - Init
@@ -423,7 +408,7 @@ is_borked = 0;
 % ylabel('Altitude, ft.')
 % title('Full Flight Cycle of CHEETA BWB')
 end
-end
+
 summarytable_out.Properties.VariableNames = {'AR','Sref','Input','1/4 Chord Sweep','Taper Ratio','Wing Span','Ref. File','Wing weight','Empennage Weight','Fuselage weight','Landing Gear','Propulsors','Motors','Fuel Cells','Battery','Thrust Reversers','System Weight','Fuel Tanks','Operational Items','Payload Weight','Fuel Weight','MTOW','Cruise Range','Max Thrust','TOFL','Maximum Landing Field Length','Climb Distance','Time to Climb','Sized By','Maximum CL during Flight','TAvailTO','FPR','ToP','T Target V35','Min TSFC','Max TSFC','Errored Out'};
 outputfilename2 = ['output_comparison2.xlsx'];
 writetable(summarytable_out,outputfilename2);

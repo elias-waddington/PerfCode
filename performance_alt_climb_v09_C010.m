@@ -1,7 +1,7 @@
-clear all
-clc
+% clear all
+% clc
 
-verbose = 0; %toggles mass data output
+verbose = 1; %toggles mass data output
 dave_numbers = 0; %toggles profile, CF drag terms
 drag_breakout = 0; %toggles o, i, w drag terms (1 is on, 0 is off)
 

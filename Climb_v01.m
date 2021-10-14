@@ -7,7 +7,7 @@ mission.M = Min;
 cruise_alt = Altfin;
 LRC_Mach = Mfin;
 
-counter = counter+1;
+% counter = counter+1;
 cint = counter;
 climb_distance = 0;
 
@@ -18,7 +18,7 @@ energy_generated_so_far = 0;
 energy_needed_so_far = 0;
 
 state.W1 = weight.final.ac;
-state.WF1 = weight.final.fuel
+state.WF1 = weight.final.fuel;
 
 while h < Altfin %change mission.M to linearly scale from 0.4 to cruise as increase
     if h > -1 && h < 10000

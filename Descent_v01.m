@@ -11,28 +11,28 @@ state.WF3 = weight.final.fuel;
 state.W3 = weight.final.ac;
 % state.time = state.t3;
 
-while h > 1
+while h > 0
     if h >= Altfin && h < 10000
         mission.v_cruise = 421.95 ;% - (10000-h)/10000*(185.66);
         mission.a = speedofsound(h);
         mission.M = mission.v_cruise/mission.a;
 %         v20k = (-speedofsound(0)*0.25+speedofsound(10000)*0.35)/10000;
 %         mission.v_cruise = speedofsound(0)*0.25 + v20k*(h);
-        idle_thrust_percent = 0.1-h/10000*0.1;
+%         idle_thrust_percent = 0.1-h/10000*0.1;
     end
     if h > 10000 && h < 25000
 %         hdot = 1500/60; %fps
-        mission.v_cruise = cruise_spd - (25000-h)/15000*(327.46);
+        mission.v_cruise = cruise_spd - (25000-h)/15000*(cruise_spd-421.95);
         mission.a = speedofsound(h);
         mission.M = mission.v_cruise/mission.a;
-        idle_thrust_percent = 0.1;
+%         idle_thrust_percent = 0.1;
     end
     if h >= 25000 
 %         hdot = 1000/60; %fps
         mission.v_cruise = cruise_spd;
         mission.a = speedofsound(h);
         mission.M = mission.v_cruise/mission.a;
-        idle_thrust_percent = 0.1;
+%         idle_thrust_percent = 0.1;
     end
     mission.altitude = h;
 %     mission.a = speedofsound(h);
@@ -42,7 +42,6 @@ while h > 1
 %     P = airpressure(h);
     rho = airdensity(h);
     mission.rho = rho;
-%     [ac,CD,CL,CDo,CDi,CDw,~,~,CDowing] = dragBWB(ac,mission,state.W3-Fuelburn);
     
     qbar = 0.5*mission.v_cruise^2*mission.rho;
     CL = (state.W3-Fuelburn)/qbar/ac.wing.S;
@@ -88,8 +87,8 @@ while h > 1
     dat.t(counter) = time;
     dat.W(counter) = state.W3-Fuelburn;
     dat.M(counter) = mission.M;
-    dat.P(counter) = Tr*mission.v_cruise* 1.3558;
-    dat.M(counter) = interp1(Tout,Pout,Tr);
+    dat.PP(counter) = Tr*mission.v_cruise* 1.3558;
+    dat.MP(counter) = interp1(Tout,Pout,Tr);
     dat.P(counter) = interp1(Tout,Pout,Tr)/FC2shaft + HotelP;
     dat.HD(counter) = HexDrag;
     dat.hdot(counter) = -hdot*dt;

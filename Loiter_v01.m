@@ -26,7 +26,7 @@ while loiter_time < E_alt*60*60+1
     CD = interp3(Msweep,REsweep,CLsweep,CDout,mission.M,Re,CL,'spline');
     HexDrag = interp3D_V003(FCmap_drag,1,dat.P(counter-1)/weight.fuelcell,mission.M,mission.altitude,'n')*weight.fuelcell;
     if HexDrag > 90000
-        HexDrag = HDgraph(counter-1)*0.25;
+        HexDrag = dat.HD(counter-1)*0.25;
     end
     Tr = 1/2*mission.rho*mission.v_cruise^2*ac.wing.S*CD + HexDrag;
     Pshaft = interp1(Talt,Palt,Tr);
